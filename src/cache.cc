@@ -1105,8 +1105,9 @@ int CACHE::add_rq(PACKET *packet)
 
     // check for duplicates in the read queue
     int index = RQ.check_queue(packet);
-    if (index != -1) {
-        
+    //if (index != -1) {
+    if((index != -1) && (RQ.entry[index].instruction == packet->instruction)) {
+    
         if (packet->instruction) {
             uint32_t rob_index = packet->rob_index;
             RQ.entry[index].rob_index_depend_on_me.insert (rob_index);
@@ -1339,7 +1340,8 @@ int CACHE::add_pq(PACKET *packet)
 
     // check for duplicates in the PQ
     int index = PQ.check_queue(packet);
-    if (index != -1) {
+    //if (index != -1) {
+    if((index != -1) && (PQ.entry[index].instruction == packet->instruction)) {
         if (packet->fill_level < PQ.entry[index].fill_level)
 	  {
             PQ.entry[index].fill_level = packet->fill_level;
@@ -1479,32 +1481,32 @@ void CACHE::update_fill_cycle()
 int CACHE::check_mshr(PACKET *packet)
 {
     // search mshr
-  //bool instruction_and_data_collision = false;
+  bool instruction_and_data_collision = false;
   
   for (uint32_t index=0; index<MSHR_SIZE; index++)
     {
       if (MSHR.entry[index].address == packet->address)
 	{
-	  //if(MSHR.entry[index].instruction != packet->instruction)
-	  //  {
-	  //    instruction_and_data_collision = true;
-	  //  }
-	  //else
-	  //  {
+	  if(MSHR.entry[index].instruction != packet->instruction)
+	    {
+	      instruction_and_data_collision = true;
+	    }
+	  else
+	    {
 	      DP ( if (warmup_complete[packet->cpu]) {
 		  cout << "[" << NAME << "_MSHR] " << __func__ << " same entry instr_id: " << packet->instr_id << " prior_id: " << MSHR.entry[index].instr_id;
 		  cout << " address: " << hex << packet->address;
 		  cout << " full_addr: " << packet->full_addr << dec << endl; });
 	    
 	      return index;
-	  //  }
+	    }
 	}
     }
 
-    //if(instruction_and_data_collision) // remove instruction-and-data collision safeguard
-    //  {
-	//return -2;
-    //  }
+    if(instruction_and_data_collision) // remove instruction-and-data collision safeguard
+      {
+	return -2;
+      }
 
     DP ( if (warmup_complete[packet->cpu]) {
     cout << "[" << NAME << "_MSHR] " << __func__ << " new address: " << hex << packet->address;
